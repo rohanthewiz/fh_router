@@ -17,11 +17,11 @@ func Hello(ctx *fasthttp.RequestCtx) {
 	fmt.Fprintf(ctx, "Hello, %s!\n", ctx.UserValue("name"))
 }
 
-func IndexAdmin(ctx *fasthttp.RequestCtx) {
+func IndexAPI(ctx *fasthttp.RequestCtx) {
 	fmt.Fprint(ctx, "WELCOME FROM API!\n")
 }
 
-func HelloAdmin(ctx *fasthttp.RequestCtx) {
+func HelloAPI(ctx *fasthttp.RequestCtx) {
 	fmt.Fprintf(ctx, "Hello rock star API, %s!\n", ctx.UserValue("name"))
 }
 
@@ -54,8 +54,8 @@ func main() {
 
 	// API router
 	a := router.New()
-	a.GET("/api", IndexAdmin)
-	a.GET("/api/hello/:name", HelloAdmin)
+	a.GET("/api", IndexAPI)
+	a.GET("/api/hello/:name", HelloAPI)
 
 	hm := make(HostMap)
 	hm["/"] = r.Handler
