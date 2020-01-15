@@ -9,14 +9,6 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-func Index(ctx *fasthttp.RequestCtx) {
-	fmt.Fprint(ctx, "WELCOME!\n")
-}
-
-func Hello(ctx *fasthttp.RequestCtx) {
-	fmt.Fprintf(ctx, "Hello, %s!\n", ctx.UserValue("name"))
-}
-
 func IndexAPI(ctx *fasthttp.RequestCtx) {
 	fmt.Fprint(ctx, "WELCOME FROM API!\n")
 }
@@ -28,17 +20,21 @@ func HelloAPI(ctx *fasthttp.RequestCtx) {
 type HostMap map[string]fasthttp.RequestHandler
 
 func (hm HostMap) HandleHost(ctx *fasthttp.RequestCtx) {
-	host := string(ctx.Host())
 	path := string(ctx.URI().Path())
-	fmt.Println("Host", host)
+	// host := string(ctx.Host())
+
+	if path == "/" {
+		ctx.URI().SetPath("/index.html") // Path rewrite - nice!
+	}
+
 	fmt.Println("Path", path)
 
 	hkey := "/"
 	arr := strings.SplitN(path, "/", 3)
-	fmt.Printf("arr %#v\n", arr)
 	if len(arr) > 1 && arr[1] == "api" {
 		hkey = arr[1]
 	}
+
 	if handler := hm[hkey]; handler != nil {
 		handler(ctx)
 	} else {
@@ -47,25 +43,25 @@ func (hm HostMap) HandleHost(ctx *fasthttp.RequestCtx) {
 }
 
 func main() {
-	// Standard router
-	r := router.New()
-	r.GET("/", Index)
-	r.GET("/hello/:name", Hello)
+	const port = "7000"
 
 	// API router
 	a := router.New()
 	a.GET("/api", IndexAPI)
 	a.GET("/api/hello/:name", HelloAPI)
 
+	// Static Handler for SPA
+	fs := fasthttp.FS{
+		Root:               "./static",
+		GenerateIndexPages: false,
+		Compress:           false,
+	}
+	staticHdlr := fs.NewRequestHandler()
+
 	hm := make(HostMap)
-	hm["/"] = r.Handler
+	hm["/"] = staticHdlr
 	hm["api"] = a.Handler
 
-	port := "7000"
-	// if len(os.Args) > 1 {
-	// 	port = os.Args[1]
-	// }
-
-	fmt.Println("Listening on port:", port )
-	log.Fatal(fasthttp.ListenAndServe(":" + port, hm.HandleHost))
+	fmt.Println("Listening on port:", port)
+	log.Fatal(fasthttp.ListenAndServe(":"+port, hm.HandleHost))
 }
